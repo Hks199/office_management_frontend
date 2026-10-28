@@ -19,10 +19,26 @@ Build settings are supplied by `netlify.toml`:
 | Publish directory | `dist`                                                                                        |
 | Node version      | `24`                                                                                          |
 
-Use the Git-based deployment workflow so Netlify bundles and installs the Edge
-middleware along with the static build. Uploading just the `dist` folder does
-not include that middleware. No frontend environment variables are required for
-the hosted API proxy; `API_PROXY_TARGET` is only for local Vite development.
+Use a Git-based deployment or the Netlify CLI from the repository root so Netlify
+bundles and installs the Edge middleware along with the static build. Uploading
+just the `dist` folder does not include that middleware. No frontend environment
+variables are required for the hosted API proxy; `API_PROXY_TARGET` is only for
+local Vite development.
+
+For a manual publish to the existing production project, run these commands in
+Windows Command Prompt:
+
+```cmd
+cd /d D:\sunvika\office_management_frontend
+npx netlify-cli login
+npx netlify-cli link --name sunvikamanagement
+npx netlify-cli deploy --prod --context production
+```
+
+Complete the browser login when prompted. The CLI reads `netlify.toml`, builds
+the frontend, and uploads the static files and Edge middleware together. Check
+`https://sunvikamanagement.netlify.app/api/v1/health/ready` after publishing; it
+should return HTTP 200 with `Service is ready`.
 
 ## 2. Choose the primary frontend address
 

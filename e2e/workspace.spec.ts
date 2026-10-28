@@ -192,8 +192,9 @@ test('submits an employee invitation with the backend field contract', async ({
   await expect(primaryBranch).not.toHaveAttribute('required');
   await expect(primaryBranch.getByRole('option', { name: 'None', exact: true })).toHaveCount(1);
   await form
-    .getByRole('combobox', { name: 'Reporting Manager Id', exact: true })
-    .selectOption(employeeId);
+    .getByRole('group', { name: 'Reporting managers', exact: true })
+    .getByRole('checkbox', { name: 'Asha Rao (SV-001)', exact: true })
+    .check();
   const sent = page.waitForRequest(
     (request) => request.url().endsWith('/api/v1/employees') && request.method() === 'POST',
   );
@@ -207,7 +208,7 @@ test('submits an employee invitation with the backend field contract', async ({
     dateOfJoining: '2026-10-19',
     roleId,
     branchId: null,
-    reportingManagerId: employeeId,
+    reportingManagerIds: [employeeId],
   });
   await expect(
     page.getByRole('status').filter({ hasText: 'Employee created successfully.' }),
