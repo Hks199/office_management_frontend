@@ -8,6 +8,12 @@ const credentialsSchema = z.object({
 });
 let accessToken: string | undefined;
 let csrfToken: string | undefined;
+let employeePanelToken: string | undefined;
+export function setEmployeePanelToken(token?: string) {
+  if (token !== undefined && !/^[A-Za-z0-9_-]{43}$/.test(token))
+    throw new Error('Invalid employee panel');
+  employeePanelToken = token;
+}
 let refreshPromise: Promise<void> | undefined;
 let sessionEpoch = 0;
 const listeners = new Set<() => void>();
@@ -69,6 +75,7 @@ export function clearSession() {
   sessionEpoch++;
   accessToken = undefined;
   csrfToken = undefined;
+  employeePanelToken = undefined;
 }
 export function hasAccessToken() {
   return Boolean(accessToken);
@@ -96,8 +103,10 @@ export async function request<T>(path: string, options: Options = {}): Promise<A
   if (!path.startsWith('/') || path.startsWith('//') || path.includes('://') || path.includes('..'))
     throw new Error('Invalid API path');
   const headers = new Headers({ Accept: 'application/json' });
+  const requestPanel = options.anonymous ? undefined : employeePanelToken;
   if (options.body !== undefined) headers.set('Content-Type', 'application/json');
   if (!options.anonymous && accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  if (requestPanel) headers.set('X-Employee-Panel', requestPanel);
   if (options.csrf && csrfToken) headers.set('X-CSRF-Token', csrfToken);
   if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey);
   let response: Response;
@@ -122,8 +131,20 @@ export async function request<T>(path: string, options: Options = {}): Promise<A
       'Unable to reach the server. Check your connection and try again.',
     );
   }
+  if (!options.anonymous && requestPanel !== employeePanelToken)
+    throw new ApiError(
+      409,
+      'EMPLOYEE_PANEL_CHANGED',
+      'The active account changed. Reload this page before continuing.',
+    );
   if (response.status === 401 && !options.anonymous && options.retry !== false) {
     await refreshSession();
+    if (requestPanel !== employeePanelToken)
+      throw new ApiError(
+        409,
+        'EMPLOYEE_PANEL_CHANGED',
+        'The active account changed. Reload this page before continuing.',
+      );
     return request<T>(path, { ...options, retry: false });
   }
   const payload: unknown = await response.json().catch(() => null);

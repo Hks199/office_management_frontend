@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import {
@@ -9,6 +9,7 @@ import {
   refreshSession,
   request,
   setCredentials,
+  setEmployeePanelToken,
 } from '../../shared/lib/api';
 import { AuthContext } from './auth-context';
 import type { Profile } from '../../shared/types/api';
@@ -24,17 +25,45 @@ const profileSchema = z.object({
   branchId: z.string().nullable(),
   reportingManagerId: z.string().nullable(),
   grants: z.array(z.object({ permission: z.string(), scope: z.string() })),
+  employeePanel: z.object({ managerName: z.string(), expiresAt: z.iso.datetime() }).optional(),
 });
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [startupError, setStartupError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const managerProfile = useRef<Profile | null>(null);
   const reset = useCallback(() => {
     clearSession();
+    managerProfile.current = null;
     setUser(null);
     queryClient.clear();
   }, [queryClient]);
+  const closeEmployeePanel = useCallback(async () => {
+    await queryClient.cancelQueries();
+    try {
+      await request('/auth/employee-panels/stop', { method: 'POST' });
+    } finally {
+      setEmployeePanelToken();
+      queryClient.clear();
+      if (managerProfile.current) setUser(managerProfile.current);
+      managerProfile.current = null;
+    }
+    const me = await request('/auth/me');
+    setUser(profileSchema.parse(me.data));
+  }, [queryClient]);
+  useEffect(() => {
+    if (!user?.employeePanel) return;
+    const timeout = window.setTimeout(
+      () => {
+        void closeEmployeePanel().catch(() => {
+          /* The manager's identity is restored locally. */
+        });
+      },
+      Math.max(0, new Date(user.employeePanel.expiresAt).getTime() - Date.now()),
+    );
+    return () => window.clearTimeout(timeout);
+  }, [user?.employeePanel, closeEmployeePanel]);
   const reload = useCallback(async () => {
     setLoading(true);
     setStartupError(null);
@@ -112,6 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
   async function logout(all = false) {
+    if (user?.employeePanel) {
+      if (all) throw new Error('Account-security actions require the account owner.');
+      return closeEmployeePanel();
+    }
     // A failed server logout is surfaced so the user knows the cookie session is still active.
     await request(all ? '/auth/logout-all' : '/auth/logout', { method: 'POST', csrf: !all });
     reset();
@@ -119,6 +152,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const channel = new BroadcastChannel('sunvika-session');
       channel.postMessage('signed-out');
       channel.close();
+    }
+  }
+  async function openEmployeePanel(employeeId: string) {
+    if (!user || user.employeePanel)
+      throw new Error('Return to your own account before opening another panel.');
+    if (queryClient.isMutating())
+      throw new Error('Wait for the current action to finish before opening an employee panel.');
+    await queryClient.cancelQueries();
+    const result = await request<{ panelToken: string }>('/auth/employee-panels/start', {
+      method: 'POST',
+      body: { employeeId },
+    });
+    managerProfile.current = user;
+    setEmployeePanelToken(result.data.panelToken);
+    try {
+      const me = await request('/auth/me');
+      const profile = profileSchema.parse(me.data);
+      queryClient.clear();
+      setUser(profile);
+    } catch (error) {
+      await closeEmployeePanel().catch(() => {
+        /* Keep the original manager identity. */
+      });
+      throw error;
     }
   }
   return (
@@ -130,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         reload,
         login,
         logout,
+        openEmployeePanel,
+        closeEmployeePanel,
         can: (...permissions) =>
           permissions.every((permission) =>
             user?.grants.some((grant) => grant.permission === permission),

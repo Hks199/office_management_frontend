@@ -29,6 +29,7 @@ const employeeFields = new Set([
   'telecallerId',
   'previousAssigneeId',
   'reportingManagerId',
+  'actingAsEmployeeId',
   'reportingManagerIds',
 ]);
 export function referenceKind(key: string, record?: RecordData): string | undefined {

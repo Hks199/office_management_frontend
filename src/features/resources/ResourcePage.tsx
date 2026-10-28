@@ -38,6 +38,7 @@ import { EvidencePhotos } from './EvidencePhotos';
 import { ProposalReview } from './ProposalReview';
 import { ContactCallHistory } from '../reports/ContactCallHistory';
 import { useDisplayRecords } from '../../shared/lib/use-display-records';
+import { OpenEmployeePanel } from '../employees/OpenEmployeePanel';
 
 function isBadge(key: string, value: unknown) {
   return (
@@ -793,6 +794,7 @@ function RecordDetails({
             </section>
           )}
           <div className="detail-actions">
+            {config.slug === 'employees' && <OpenEmployeePanel employeeId={id} />}
             {config.slug === 'leads' && !record.assignedTo && (
               <p className="notice">
                 Awaiting assignment: this lead is with the receiving branch. Its branch head or an

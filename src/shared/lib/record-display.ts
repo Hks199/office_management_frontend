@@ -13,6 +13,11 @@ export const references = {
   employeeId: { title: 'Employee', name: 'employeeName', code: 'employeeCode' },
   userId: { title: 'Employee', name: 'userName', code: 'userCode' },
   actorId: { title: 'Performed by', name: 'actorName', code: 'actorCode' },
+  actingAsEmployeeId: {
+    title: 'Employee panel',
+    name: 'actingAsEmployeeName',
+    code: 'actingAsEmployeeCode',
+  },
   ownerId: { title: 'Owner', name: 'ownerName', code: 'ownerCode' },
   managerId: { title: 'Manager', name: 'managerName', code: 'managerCode' },
   branchHeadId: { title: 'Branch head', name: 'branchHeadName', code: 'branchHeadCode' },
@@ -85,6 +90,7 @@ export const references = {
 } as const;
 
 export const technicalFields = new Set([
+  'employeePanelId',
   '_id',
   'id',
   '__v',

@@ -7,6 +7,8 @@ export interface AuthContextValue {
   reload: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: (all?: boolean) => Promise<void>;
+  openEmployeePanel: (employeeId: string) => Promise<void>;
+  closeEmployeePanel: () => Promise<void>;
   can: (...permissions: string[]) => boolean;
 }
 export const AuthContext = createContext<AuthContextValue | null>(null);

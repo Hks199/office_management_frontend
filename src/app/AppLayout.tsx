@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Building2,
@@ -75,7 +75,8 @@ const groups = [
   },
 ];
 export function AppLayout() {
-  const { user, can, logout } = useAuth();
+  const { user, can, logout, closeEmployeePanel } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [error, setError] = useState('');
@@ -219,8 +220,8 @@ export function AppLayout() {
             </div>
             <button
               className="icon-button"
-              aria-label="Sign out"
-              title="Sign out"
+              aria-label={user?.employeePanel ? 'Return to own account' : 'Sign out'}
+              title={user?.employeePanel ? 'Return to own account' : 'Sign out'}
               disabled={busy}
               onClick={() => void signOut()}
             >
@@ -267,8 +268,42 @@ export function AppLayout() {
             </Link>
           </div>
         </header>
+        {user?.employeePanel && (
+          <section className="employee-panel-banner" aria-label="Employee panel session">
+            <div>
+              <strong>
+                Employee panel: {user.firstName} {user.lastName} ({user.employeeCode})
+              </strong>
+              <p>
+                Opened by {user.employeePanel.managerName}. Work actions are recorded under the
+                manager’s identity. Attendance and account-security changes are blocked.
+              </p>
+            </div>
+            <button
+              className="button secondary small"
+              disabled={busy}
+              onClick={() => {
+                setBusy(true);
+                setError('');
+                void closeEmployeePanel()
+                  .then(() => navigate('/employees', { replace: true }))
+                  .catch((failure: unknown) => setError(errorMessage(failure)))
+                  .finally(() => setBusy(false));
+              }}
+            >
+              {busy ? 'Returning…' : 'Return to my account'}
+            </button>
+            {error && (
+              <p className="inline-error" role="alert">
+                {error}
+              </p>
+            )}
+          </section>
+        )}
         <main id="main-content" className="main-content" tabIndex={-1}>
-          <Outlet />
+          <Outlet
+            key={`${user?.id ?? 'anonymous'}:${user?.employeePanel ? 'employee-panel' : 'own-account'}`}
+          />
         </main>
         <footer className="workspace-footer">
           <span>

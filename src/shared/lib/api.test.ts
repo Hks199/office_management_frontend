@@ -7,6 +7,7 @@ import {
   refreshSession,
   request,
   setCredentials,
+  setEmployeePanelToken,
 } from './api';
 const csrf = 'c'.repeat(43);
 const credentials = { accessToken: 'access-token', csrfToken: csrf, expiresIn: 900 };
@@ -29,6 +30,48 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('secure API transport', () => {
+  it('keeps the manager bearer while adding a tab-local panel token only to authenticated requests', async () => {
+    setCredentials(credentials);
+    setEmployeePanelToken('p'.repeat(43));
+    vi.mocked(fetch).mockImplementation(async () => response({}));
+    await request('/leads');
+    const headers = new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers);
+    expect(headers.get('Authorization')).toBe('Bearer access-token');
+    expect(headers.get('X-Employee-Panel')).toBe('p'.repeat(43));
+    await request('/auth/csrf', { anonymous: true });
+    expect(new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers).has('X-Employee-Panel')).toBe(
+      false,
+    );
+    setEmployeePanelToken();
+    await request('/auth/me');
+    expect(new Headers(vi.mocked(fetch).mock.calls[2][1]?.headers).has('X-Employee-Panel')).toBe(
+      false,
+    );
+  });
+  it('rejects stale responses after switching accounts instead of displaying the previous panel data', async () => {
+    setCredentials(credentials);
+    setEmployeePanelToken('p'.repeat(43));
+    vi.mocked(fetch).mockImplementation(async () => {
+      setEmployeePanelToken();
+      return response({ secret: 'old-panel-data' });
+    });
+    await expect(request('/leads')).rejects.toMatchObject({ code: 'EMPLOYEE_PANEL_CHANGED' });
+  });
+  it('does not replay an employee mutation under the manager after a refresh-time account switch', async () => {
+    setCredentials(credentials);
+    setEmployeePanelToken('p'.repeat(43));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(response(null, 401))
+      .mockResolvedValueOnce(response({ csrfToken: csrf }))
+      .mockImplementationOnce(async () => {
+        setEmployeePanelToken();
+        return response(credentials);
+      });
+    await expect(
+      request('/leads/example/status', { method: 'PATCH', body: {} }),
+    ).rejects.toMatchObject({ code: 'EMPLOYEE_PANEL_CHANGED' });
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
   it('explains denied S3 access during contact upload without exposing provider details', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(

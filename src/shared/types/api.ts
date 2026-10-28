@@ -17,6 +17,7 @@ export interface Grant {
   scope: string;
 }
 export interface Profile {
+  employeePanel?: { managerName: string; expiresAt: string };
   id: string;
   employeeCode: string;
   firstName: string;

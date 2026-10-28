@@ -68,18 +68,31 @@ export function SettingsPage() {
             <h2>Account security</h2>
             <KeyRound size={19} />
           </div>
+          {user?.employeePanel && (
+            <p className="notice">
+              Account-security changes require the employee to sign in directly.
+            </p>
+          )}
           <div className="security-options">
             <div>
               <h3>Password</h3>
               <p>Use a unique password of at least 12 characters.</p>
-              <button className="button secondary small" onClick={() => setChanging(true)}>
+              <button
+                className="button secondary small"
+                disabled={Boolean(user?.employeePanel)}
+                onClick={() => setChanging(true)}
+              >
                 Change password
               </button>
             </div>
             <div>
               <h3>Active sessions</h3>
               <p>Sign out every device associated with your account.</p>
-              <button className="button secondary small" onClick={() => setRevoke(true)}>
+              <button
+                className="button secondary small"
+                disabled={Boolean(user?.employeePanel)}
+                onClick={() => setRevoke(true)}
+              >
                 <LogOut size={15} />
                 Sign out all devices
               </button>
