@@ -13,9 +13,11 @@ Copy-Item .env.example .env
 npm run dev
 ```
 
-Open **http://localhost:5173**. The development proxy forwards `/api` to `http://127.0.0.1:3000`. Change `API_PROXY_TARGET` in `.env` if the backend runs elsewhere. This variable is server-side Vite configuration; it is not exposed to browser code.
+Open **http://localhost:5173**. The supplied `.env.example` forwards `/api` to **https://sunvika.niakylie.com**. Browser requests such as `/api/v1/auth/login` reach `https://sunvika.niakylie.com/api/v1/auth/login` through the Vite proxy. For a local backend instead, set `API_PROXY_TARGET=http://127.0.0.1:3000`. Restart Vite after changing `.env`. This variable is server-side Vite configuration; it is not exposed to browser code.
 
-In the backend configuration, set `CORS_ORIGINS=http://localhost:5173` and `CREDENTIAL_UI_ORIGIN=http://localhost:5173`, then restart the backend if needed. The proxy preserves browser Origin headers. For the backend's CSRF discovery GET, which requires an Origin even when browsers omit it, the loopback development proxy supplies the fixed trusted development origin. Use the documented localhost URL consistently rather than switching between localhost and 127.0.0.1.
+The API used by local development must include `http://localhost:5173` in its `CORS_ORIGINS`. For a fully local setup, use `CREDENTIAL_UI_ORIGIN=http://localhost:5173`. The proxy sends the API server's hostname in Host and preserves browser Origin headers. For the backend's CSRF discovery GET, which requires an Origin even when browsers omit it, the loopback development proxy supplies the fixed trusted development origin. Use the documented localhost URL consistently rather than switching between localhost and 127.0.0.1.
+
+If the deployed API rejects local requests with HTTP 403 / `ORIGIN_FORBIDDEN`, apply the settings in [deploy/backend-api.env.example](deploy/backend-api.env.example) on that API server, preserving any other trusted frontend origins, and restart the API. Editing the adjacent local backend `.env` does not update the deployed server. `CREDENTIAL_UI_ORIGIN` must always be an allowed frontend origin; retain a hosted frontend origin for invitation links if that is where employees sign in.
 
 Sign in with an existing invited employee account. There is no public registration or hardcoded administrator password. The initial administrator must accept the invitation delivered by the backend's credential worker. Invitation and recovery routes accept `#token=...` or a bare `#...` fragment, remove it from the address immediately, and send the token only in a JSON request body.
 
@@ -106,7 +108,14 @@ The real-backend suite checks policies, branch policy/calendar updates, workflow
 
 ## Production security
 
+For Netlify, the repository includes `netlify.toml` with the build settings,
+backend proxy, React Router fallback, security headers and CSRF Edge middleware.
+Follow [deploy/NETLIFY.md](deploy/NETLIFY.md) for the exact deployment and backend/S3
+origin settings. The backend stays at `https://sunvika.niakylie.com`.
+
 See [SECURITY.md](SECURITY.md) and [deploy/nginx.conf.example](deploy/nginx.conf.example). Serve `dist/` over HTTPS and proxy `/api` on the **same origin**. Configure the backend with the exact public origin, secure production cookies, and the correct trusted-proxy count. The nginx example requires adaptation and deployment validation; it has not been deployed by this task.
+
+**https://sunvika.niakylie.com is the backend API address**, not the frontend address. Its `CORS_ORIGINS` must include the actual frontend origin (`http://localhost:5173` for local development), and `CREDENTIAL_UI_ORIGIN` must point to that frontend so invitation and reset links open the React app. For production hosting, adapt the nginx example to the actual frontend domain and configure its `/api/` upstream for the deployed backend; an external HTTPS upstream must use the backend hostname for Host and TLS SNI. Production builds use the hosting reverse proxy; `API_PROXY_TARGET` only configures Vite development/preview.
 
 Never put SMTP, database, JWT, S3 or other secrets in frontend environment variables. Anything shipped to a browser is public. Keep dependencies updated and run the checks before release.
 

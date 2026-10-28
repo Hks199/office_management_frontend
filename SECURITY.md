@@ -24,6 +24,16 @@ The frontend implements defensive controls; it cannot guarantee security or repl
 
 ## Deployment requirements
 
+Netlify deployments use [netlify.toml](netlify.toml) and
+[api-security.js](netlify/edge-functions/api-security.js). The API proxy keeps
+browser authentication on the frontend origin. Edge middleware supplies a
+missing CSRF discovery Origin from Netlify's canonical site metadata, preserves
+supplied Origins, rejects production API use from non-primary deploy URLs, and
+sets no-store response headers. Configure the exact primary frontend origin in
+the deployed backend and private S3 bucket as described in
+[deploy/NETLIFY.md](deploy/NETLIFY.md). Publishing only `dist` skips Edge middleware;
+use a Netlify build from the repository.
+
 Use the supplied nginx example as a starting point and adapt the domain, certificates, upstream and root. It includes CSP, frame denial, HSTS, no-sniff, no-referrer, no-store, and a permissions policy. Those headers take effect only when installed at the serving host; a Vite build cannot enforce response headers.
 
 The CSP uses only same-origin scripts/styles and AWS storage connections. It permits same-origin workers for local Excel parsing and does not enable unsafe-inline or unsafe-eval. Restrict the AWS wildcard to your actual regional bucket host(s) in production. HSTS is appropriate only for a correctly configured HTTPS domain.

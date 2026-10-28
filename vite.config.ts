@@ -15,7 +15,9 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: env.API_PROXY_TARGET || 'http://127.0.0.1:3000',
-          changeOrigin: false,
+          // Route by the upstream hostname (including HTTPS reverse proxies).
+          // This changes Host, while preserving the browser's Origin for CORS/CSRF.
+          changeOrigin: true,
           configure(proxy) {
             proxy.on('proxyReq', (proxyRequest, incoming) => {
               // Browsers omit Origin on same-origin GETs; this endpoint explicitly requires it.

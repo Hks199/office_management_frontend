@@ -10,6 +10,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { files: ['tools/**/*.mjs'], languageOptions: { globals: globals.node } },
+  { files: ['netlify/edge-functions/**/*.js'], languageOptions: { globals: globals.browser } },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
