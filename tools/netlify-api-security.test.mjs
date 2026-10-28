@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import apiSecurity from '../netlify/edge-functions/api-security.js';
 
-const origin = 'https://sunvika-office.netlify.app';
-const context = (next) => ({ site: { url: origin }, next });
+const origin = 'https://sunvikamanagement.netlify.app';
+const context = (next) => ({ next });
 
 test('CSRF discovery uses the canonical site origin and preserves the refresh cookie', async () => {
   const request = new Request(`${origin}/api/v1/auth/csrf`, {
@@ -80,17 +80,21 @@ test('ordinary GET requests do not acquire a forged Origin header', async () => 
 
 test('preview and hostile host URLs cannot inherit the production origin or reach the API', async () => {
   for (const host of [
-    'https://deploy-preview-1--sunvika-office.netlify.app',
+    'https://deploy-preview-1--sunvikamanagement.netlify.app',
+    'https://branch--sunvikamanagement.netlify.app',
     'https://untrusted.example',
+    'https://sunvikamanagement.netlify.app.untrusted.example',
+    'http://sunvikamanagement.netlify.app',
+    'https://sunvikamanagement.netlify.app:8443',
   ]) {
-    const response = await apiSecurity(
-      new Request(`${host}/api/v1/auth/csrf`),
-      context(() => {
-        assert.fail('The production API must not be contacted');
-      }),
-    );
-    assert.equal(response.status, 403);
-    assert.equal((await response.json()).error.code, 'SITE_ORIGIN_FORBIDDEN');
+    for (const site of [undefined, { url: origin }, { url: host }]) {
+      const response = await apiSecurity(new Request(`${host}/api/v1/auth/csrf`), {
+        site,
+        next: () => assert.fail('The production API must not be contacted'),
+      });
+      assert.equal(response.status, 403);
+      assert.equal((await response.json()).error.code, 'SITE_ORIGIN_FORBIDDEN');
+    }
   }
 });
 
@@ -104,13 +108,33 @@ test('cross-site requests without an Origin cannot use the CSRF fallback', async
   assert.equal(response.status, 403);
 });
 
-test('insecure or missing canonical site configuration fails closed', async () => {
-  for (const site of [{}, { url: 'http://sunvika-office.netlify.app' }]) {
-    const response = await apiSecurity(new Request(`${origin}/api/v1/auth/csrf`), {
-      site,
-      next: () => assert.fail('No trusted canonical URL is configured'),
-    });
-    assert.equal(response.status, 503);
+test('the production origin works despite missing, insecure or unrelated runtime site metadata', async () => {
+  for (const site of [
+    undefined,
+    null,
+    {},
+    { url: 'not a URL' },
+    { url: 'http://sunvikamanagement.netlify.app' },
+    { url: 'https://untrusted.example' },
+    { url: 'https://deploy-preview-1--sunvikamanagement.netlify.app' },
+  ]) {
+    for (const path of ['/api/v1/health/ready', '/api/v1/auth/csrf']) {
+      let forwardedCount = 0;
+      const response = await apiSecurity(new Request(`${origin}${path}`), {
+        site,
+        next: async (forwarded) => {
+          forwardedCount++;
+          assert.equal(
+            forwarded.headers.get('Origin'),
+            path.endsWith('/auth/csrf') ? origin : null,
+          );
+          return Response.json({ success: true });
+        },
+      });
+      assert.equal(response.status, 200);
+      assert.equal(forwardedCount, 1);
+      assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+    }
   }
 });
 

@@ -46,7 +46,7 @@ Mark attendance shows only the next action allowed by the employee's current bac
 | Attendance     | Check-in/out with photo checksum, private S3 upload and confirmation, explicit geolocation, monthly records, review/correction, private evidence, branch policies and calendars |
 | Activity       | Call submission, site visit start, private visit-photo uploads and completion, report reviews and histories                                                                     |
 | Targets        | Assignment, revision-aware updates, verified progress, revision history, evidence capture/review/history                                                                        |
-| Imports        | CSV and Excel templates, worksheet selection, column mapping, private upload, validation preview, confirmation and assignment                                                          |
+| Imports        | CSV and Excel templates, worksheet selection, column mapping, private upload, validation preview, confirmation and assignment                                                   |
 | Administration | Role creation/edit/archive, scoped grant picker, creation policy listing/creation/editing, state/district/block management, lead reference values                               |
 | Usability      | Responsive navigation, module search, loading/error/empty states, paginated lists, accessible dialogs and form labels, reduced-motion support                                   |
 
@@ -112,6 +112,10 @@ For Netlify, the repository includes `netlify.toml` with the build settings,
 backend proxy, React Router fallback, security headers and CSRF Edge middleware.
 Follow [deploy/NETLIFY.md](deploy/NETLIFY.md) for the exact deployment and backend/S3
 origin settings. The backend stays at `https://sunvika.niakylie.com`.
+The Edge middleware pins the production frontend to
+`https://sunvikamanagement.netlify.app`; update its `productionOrigin` constant
+when changing the primary frontend domain. Runtime site metadata and preview
+URLs cannot grant access to the production API.
 
 See [SECURITY.md](SECURITY.md) and [deploy/nginx.conf.example](deploy/nginx.conf.example). Serve `dist/` over HTTPS and proxy `/api` on the **same origin**. Configure the backend with the exact public origin, secure production cookies, and the correct trusted-proxy count. The nginx example requires adaptation and deployment validation; it has not been deployed by this task.
 

@@ -31,11 +31,13 @@ for example `https://your-project.netlify.app`. You can instead configure a
 custom frontend domain in Netlify. This frontend address must differ from the
 existing backend domain `sunvika.niakylie.com`.
 
-The Edge middleware reads the canonical frontend URL from Netlify site metadata.
-It does not guess it from an arbitrary Host header. API calls from deploy-preview
-URLs, branch domains or non-primary aliases are rejected; use the primary
-frontend address for this production backend. Preview static pages can still
-render, but do not have production API access.
+The Edge middleware pins the canonical frontend origin to
+`https://sunvikamanagement.netlify.app` in the `productionOrigin` constant in
+`netlify/edge-functions/api-security.js`. Update that constant when changing the
+primary frontend domain. Incoming Host headers and runtime site metadata cannot
+grant access to the production API. API calls from deploy-preview URLs, branch
+domains or non-primary aliases are rejected; use the primary frontend address.
+Preview static pages can still render, but do not have production API access.
 
 ## 3. Configure the deployed backend
 

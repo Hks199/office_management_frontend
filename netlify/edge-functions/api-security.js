@@ -1,3 +1,6 @@
+// Keep the production frontend origin explicit; runtime site metadata may be incomplete.
+const productionOrigin = 'https://sunvikamanagement.netlify.app';
+
 function reject(status, code, message) {
   return Response.json(
     { success: false, message, error: { code, details: [] } },
@@ -6,18 +9,9 @@ function reject(status, code, message) {
 }
 
 export default async function apiSecurity(request, context) {
-  let site;
-  try {
-    // Netlify supplies this canonical production URL. Never trust incoming Host as a fallback.
-    site = new URL(context.site.url);
-    if (site.protocol !== 'https:' || site.username || site.password)
-      throw new Error('Invalid site');
-  } catch {
-    return reject(503, 'SITE_NOT_CONFIGURED', 'The frontend site address is not configured.');
-  }
   const url = new URL(request.url);
   // Preview and alias domains must not silently acquire access to production office data.
-  if (url.origin !== site.origin) {
+  if (url.origin !== productionOrigin) {
     return reject(
       403,
       'SITE_ORIGIN_FORBIDDEN',
@@ -34,7 +28,7 @@ export default async function apiSecurity(request, context) {
       return reject(403, 'ORIGIN_FORBIDDEN', 'Cross-site authentication requests are not allowed.');
     }
     const headers = new Headers(request.headers);
-    headers.set('Origin', site.origin);
+    headers.set('Origin', productionOrigin);
     forwarded = new Request(request, { headers });
   }
   try {
