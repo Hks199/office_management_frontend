@@ -26,6 +26,9 @@ import { EmptyState, ErrorState, Loading } from '../../shared/components/Feedbac
 import { Modal } from '../../shared/components/Modal';
 import { DynamicForm, FormField } from '../../shared/components/DynamicForm';
 import { AttendanceCapture } from '../attendance/AttendanceCapture';
+import { AttendanceFilters } from '../attendance/AttendanceFilters';
+import { AttendanceOverview } from '../attendance/AttendanceOverview';
+import { attendanceRange, workedTime } from '../attendance/supervision';
 import { ImportUpload } from '../uploads/ImportUpload';
 import { ImportAssignment } from '../uploads/ImportAssignment';
 import { importFailureMessage } from '../uploads/import-status';
@@ -75,7 +78,9 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
   const [search, setSearch] = useState('');
   const [term, setTerm] = useState('');
   const [filters, setFilters] = useState<RecordData>({});
-  const [activeFilters, setActiveFilters] = useState<RecordData>({});
+  const [activeFilters, setActiveFilters] = useState<RecordData>(() =>
+    config.slug === 'attendance' ? attendanceRange() : {},
+  );
   const [sortOrder, setSortOrder] = useState('desc');
   const [creating, setCreating] = useState(false);
   const [special, setSpecial] = useState(false);
@@ -214,6 +219,15 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
           </button>
         </div>
       )}
+      {config.slug === 'attendance' && (
+        <AttendanceOverview
+          filters={activeFilters}
+          onApply={(next) => {
+            setActiveFilters(next);
+            setPage(1);
+          }}
+        />
+      )}
       <section className="panel resource-panel">
         <div className="panel-heading">
           <div>
@@ -228,61 +242,76 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
             className="icon-button"
             aria-label="Refresh records"
             disabled={query.isFetching}
-            onClick={() => void query.refetch()}
+            onClick={() =>
+              void (config.slug === 'attendance'
+                ? queryClient.invalidateQueries({ queryKey: ['attendance'] })
+                : query.refetch())
+            }
           >
             <RefreshCw size={17} className={query.isFetching ? 'animate-spin' : ''} />
           </button>
         </div>
-        <form className="table-toolbar" onSubmit={apply}>
-          {config.search && (
-            <div className="search-field">
-              <Search size={17} />
-              <input
-                aria-label={`Search ${config.title}`}
-                placeholder={`Search ${config.title.toLowerCase()}…`}
-                value={search}
-                minLength={2}
-                maxLength={100}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-          )}
-          {(config.filters ?? []).map((field) => (
-            <FormField
-              key={field.name}
-              field={field}
-              value={filters[field.name]}
-              values={filters}
-              onChange={(value) =>
-                setFilters((previous) => {
-                  const next = { ...previous, [field.name]: value };
-                  config.filters
-                    ?.filter((child) => child.parent === field.name)
-                    .forEach((child) => {
-                      next[child.name] = '';
-                    });
-                  return next;
-                })
-              }
-            />
-          ))}
-          {(config.search || config.filters) && (
-            <button className="button secondary small" type="submit">
-              Apply
-            </button>
-          )}
-          <button
-            type="button"
-            className="button ghost small toolbar-sort"
-            onClick={() => {
-              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        {config.slug === 'attendance' ? (
+          <AttendanceFilters
+            key={JSON.stringify(activeFilters)}
+            value={activeFilters}
+            onApply={(next) => {
+              setActiveFilters(next);
               setPage(1);
             }}
-          >
-            <ArrowDownUp size={15} />
-            {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
-          </button>
-        </form>
+          />
+        ) : (
+          <form className="table-toolbar" onSubmit={apply}>
+            {config.search && (
+              <div className="search-field">
+                <Search size={17} />
+                <input
+                  aria-label={`Search ${config.title}`}
+                  placeholder={`Search ${config.title.toLowerCase()}…`}
+                  value={search}
+                  minLength={2}
+                  maxLength={100}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+            )}
+            {(config.filters ?? []).map((field) => (
+              <FormField
+                key={field.name}
+                field={field}
+                value={filters[field.name]}
+                values={filters}
+                onChange={(value) =>
+                  setFilters((previous) => {
+                    const next = { ...previous, [field.name]: value };
+                    config.filters
+                      ?.filter((child) => child.parent === field.name)
+                      .forEach((child) => {
+                        next[child.name] = '';
+                      });
+                    return next;
+                  })
+                }
+              />
+            ))}
+            {(config.search || config.filters) && (
+              <button className="button secondary small" type="submit">
+                Apply
+              </button>
+            )}
+            <button
+              type="button"
+              className="button ghost small toolbar-sort"
+              onClick={() => {
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                setPage(1);
+              }}
+            >
+              <ArrowDownUp size={15} />
+              {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+            </button>
+          </form>
+        )}
         {allowBatch && rows.length > 0 && (
           <p className="form-note">
             Contacts are assigned to a telecaller during import. Select contacts only when you need
@@ -300,8 +329,20 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
           <ErrorState error={query.error} retry={() => void query.refetch()} />
         ) : rows.length === 0 ? (
           <EmptyState
-            title={term ? 'No matches found' : `No ${config.title.toLowerCase()} yet`}
-            description={term ? 'Try a different search or filter.' : undefined}
+            title={
+              config.slug === 'attendance'
+                ? 'No attendance matches these filters'
+                : term
+                  ? 'No matches found'
+                  : `No ${config.title.toLowerCase()} yet`
+            }
+            description={
+              config.slug === 'attendance'
+                ? 'Try another date range or reset the filters to today.'
+                : term
+                  ? 'Try a different search or filter.'
+                  : undefined
+            }
           />
         ) : (
           <div className="table-scroll">
@@ -342,7 +383,19 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
                     )}
                     {config.columns.map((column, index) => (
                       <td key={column} className={index === 0 ? 'primary-cell' : ''}>
-                        {isBadge(column, row[column]) && row[column] !== undefined ? (
+                        {config.slug === 'attendance' && column === 'workingHours' ? (
+                          workedTime(row)
+                        ) : config.slug === 'attendance' && column === 'status' ? (
+                          <span
+                            className={`badge ${row.status === 'COMPLETED' ? 'green' : 'amber'}`}
+                          >
+                            {row.status === 'COMPLETED' ? 'Checked out' : 'Awaiting checkout'}
+                          </span>
+                        ) : config.slug === 'attendance' && column === 'lateArrival' ? (
+                          <span className={`badge ${row.lateArrival ? 'red' : 'green'}`}>
+                            {row.lateArrival ? 'Late' : 'No late flag'}
+                          </span>
+                        ) : isBadge(column, row[column]) && row[column] !== undefined ? (
                           <StatusBadge value={row[column]} />
                         ) : (
                           recordFieldValue(row, column)

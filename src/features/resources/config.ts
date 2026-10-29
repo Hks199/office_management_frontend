@@ -469,7 +469,17 @@ export const resources: ResourceConfig[] = [
     description: 'A clear view of your team’s working day.',
     endpoint: '/attendance',
     permission: 'attendance:read',
-    columns: ['attendanceDate', 'employeeId', 'checkInAt', 'checkOutAt', 'status', 'reviewStatus'],
+    columns: [
+      'attendanceDate',
+      'employeeId',
+      'branchId',
+      'effectiveCheckInAt',
+      'effectiveCheckOutAt',
+      'workingHours',
+      'status',
+      'lateArrival',
+      'reviewStatus',
+    ],
     filters: [
       { name: 'month', type: 'text', pattern: '20[0-9]{2}-(0[1-9]|1[0-2])', hint: 'YYYY-MM' },
       choice('reviewStatus', ['PENDING', 'APPROVED', 'REJECTED'], false),

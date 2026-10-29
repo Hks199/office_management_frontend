@@ -2107,3 +2107,116 @@ tbody tr:hover {
     scroll-behavior: auto !important;
   }
 }
+
+.attendance-overview {
+  margin-bottom: 1.5rem;
+}
+.attendance-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.attendance-overview-heading h2 {
+  margin: 0 0 0.35rem;
+}
+.attendance-overview-heading p {
+  margin: 0;
+}
+.attendance-overview-heading .button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.attendance-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.attendance-summary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 1px solid #dce6e1;
+  border-radius: 14px;
+  background: white;
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  color: #244c3c;
+}
+.attendance-summary-card strong {
+  font-size: 1.65rem;
+  line-height: 1.2;
+}
+.attendance-summary-card[aria-pressed='true'] {
+  border-color: #348668;
+  background: #edf8f1;
+  box-shadow: inset 0 0 0 1px #348668;
+}
+.attendance-summary-card:focus-visible {
+  outline: 3px solid #348668;
+  outline-offset: 3px;
+}
+.attendance-summary-card:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.attendance-filters {
+  padding: 1.25rem;
+  border-top: 1px solid #e5eae7;
+  border-bottom: 1px solid #e5eae7;
+}
+.attendance-presets,
+.attendance-filter-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.attendance-presets {
+  margin-bottom: 1rem;
+}
+.attendance-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.attendance-filter-grid > * {
+  min-width: 0;
+}
+.attendance-filter-grid .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.attendance-filter-grid select,
+.attendance-filter-grid input {
+  width: 100%;
+  min-width: 0;
+}
+.attendance-filter-actions {
+  margin-top: 1rem;
+}
+@media (max-width: 1100px) {
+  .attendance-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .attendance-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .attendance-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .attendance-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .attendance-filters {
+    padding: 1rem;
+  }
+}
