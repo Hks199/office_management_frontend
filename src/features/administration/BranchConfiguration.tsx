@@ -29,10 +29,11 @@ interface Calendar {
   holidays?: string[];
 }
 export function BranchConfiguration({ id, onClose }: { id: string; onClose: () => void }) {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const queryClient = useQueryClient();
-  const allowPolicy = can('branches:update');
-  const allowCalendar = can('dashboard:read', 'branches:read');
+  const md = Boolean(user?.canManageAttendanceSettings && !user.employeePanel);
+  const allowPolicy = md && can('branches:update');
+  const allowCalendar = md && can('dashboard:read', 'branches:read');
   const [tab, setTab] = useState(allowPolicy ? 'policy' : 'calendar');
   const [success, setSuccess] = useState('');
   const branch = useQuery({
@@ -49,6 +50,12 @@ export function BranchConfiguration({ id, onClose }: { id: string; onClose: () =
     setSuccess('Branch configuration saved.');
     await queryClient.invalidateQueries();
   }
+  if (!md)
+    return (
+      <Modal title="Attendance settings" onClose={onClose}>
+        <p>Only the MD can access office timings and holidays.</p>
+      </Modal>
+    );
   return (
     <Modal title="Branch attendance settings" onClose={onClose}>
       <div className="tabs">
@@ -103,7 +110,7 @@ export function BranchConfiguration({ id, onClose }: { id: string; onClose: () =
           key={calendar.data.data.revision ?? 0}
           id={id}
           calendar={calendar.data.data}
-          editable={can('settings:manage')}
+          editable={md && can('settings:manage')}
           onSaved={saved}
         />
       )}
@@ -160,8 +167,8 @@ function PolicyEditor({
   return (
     <form className="admin-form" onSubmit={(event) => void submit(event)}>
       <p className="form-note">
-        Working times use Asia/Kolkata. Leave both empty to disable schedule flags. Changes apply to
-        subsequent attendance evaluations.
+        Working times use Asia/Kolkata. Leave both empty to use office-wide timing defaults when
+        configured. Changes apply to subsequent attendance evaluations.
       </p>
       <fieldset disabled={busy} className="form-grid">
         <label className="field">
@@ -308,8 +315,8 @@ function CalendarEditor({
     <form className="admin-form" onSubmit={(event) => void submit(event)}>
       {calendar.configured === false && (
         <p className="notice">
-          This branch has no working calendar. Configure it to calculate missing-check-in totals.
-          These totals remain provisional and are not verified absence.
+          This branch has no separate working calendar. Office-wide working days and holidays apply
+          when configured. Missing-check-in totals remain provisional.
         </p>
       )}
       <p className="form-note">

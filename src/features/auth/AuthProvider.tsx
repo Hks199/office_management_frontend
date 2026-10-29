@@ -15,6 +15,7 @@ import { AuthContext } from './auth-context';
 import type { Profile } from '../../shared/types/api';
 
 const profileSchema = z.object({
+  canManageAttendanceSettings: z.boolean().optional(),
   id: z.string(),
   employeeCode: z.string(),
   firstName: z.string(),

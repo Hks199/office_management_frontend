@@ -2220,3 +2220,32 @@ tbody tr:hover {
     padding: 1rem;
   }
 }
+
+.attendance-workforce {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #dce6e1;
+}
+.attendance-workforce .attendance-summary-card {
+  cursor: default;
+}
+.attendance-absence-card {
+  color: #9a302b;
+  background: #fff3ef;
+  border-color: #efd2ca;
+}
+.office-holiday-list {
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.office-holiday-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.25rem;
+  border-bottom: 1px solid #e5eae7;
+}

@@ -36,12 +36,36 @@ requests. Choosing a manager, role, employee or branch never grants more access.
 Filters for role and reporting manager use current organization assignments;
 date, branch, punctuality, location and review filters use attendance records.
 
-No absence or payroll inference is made from missing records. Correct absence
-calculation requires working schedules, approved leave and holiday handling.
+The separate **Today’s workforce** section shows the total employee count and
+today's checked-in, absent/no-check-in, on-leave and non-working-day counts for
+the selected team. It always refers to today, even when browsing historical
+attendance. It counts current employee status, not historical employment records.
+
+Absence means no recorded check-in after office start time plus the grace period
+on a scheduled working day. Employees marked ON_LEAVE, inactive/exited employees,
+future joiners and roles without self-attendance authority are excluded. Holidays
+and weekly offs are excluded. Missing schedules are reported separately. Counts
+are provisional, are not payroll decisions, and do not constitute approved leave.
+
+Only the system MD, outside an employee panel, can open **Office timings & holidays**
+on the Attendance page. Set start/end times, grace, working weekdays and holiday
+dates, then save. These defaults cover employees without a branch and branches
+without separate timing/calendar settings. Branch overrides remain available to
+the MD under Branches → View branch → Attendance settings. Office holidays apply
+to every branch, in addition to branch-specific holiday dates. Existing attendance
+policy snapshots are preserved; subsequent check-ins use the updated defaults.
 
 ## Deployment
 
-Deploy **both** backend and frontend changes. The attendance API now accepts
+Deploy **both** backend and frontend changes. Run the additive backend collection
+migration (`npm run db:indexes:production`, or the existing EC2 workflow with
+`RUN_INDEX_MIGRATION=true`) before production preflight for this release, so
+`attendance_office_settings` exists. It does not invent or save office timings.
+Restart/deploy the backend, redeploy the frontend and sign in again so the MD-only
+settings flag is present in the session profile. The MD must save the real schedule
+before absence can be calculated for otherwise unconfigured employees.
+
+The attendance API now accepts
 paired inclusive `from`/`to` business dates, `managerId`, `roleId` and
 `outsideGeofence`, alongside existing employee, branch and status filters.
 Existing monthly reports continue to work when no explicit date range is supplied.

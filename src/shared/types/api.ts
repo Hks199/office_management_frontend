@@ -17,6 +17,7 @@ export interface Grant {
   scope: string;
 }
 export interface Profile {
+  canManageAttendanceSettings?: boolean;
   employeePanel?: { managerName: string; expiresAt: string };
   id: string;
   employeeCode: string;

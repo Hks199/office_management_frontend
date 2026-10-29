@@ -882,6 +882,8 @@ function RecordDetails({
                 </button>
               )}
             {config.slug === 'branches' &&
+              user?.canManageAttendanceSettings &&
+              !user.employeePanel &&
               (can('branches:update') || can('dashboard:read', 'branches:read')) && (
                 <button className="button secondary small" onClick={() => setConfiguring(true)}>
                   Attendance settings

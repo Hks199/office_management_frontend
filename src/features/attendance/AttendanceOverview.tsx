@@ -8,6 +8,7 @@ import {
   collectReferences,
   type DisplayReference,
 } from '../../shared/lib/display-references';
+import { WorkforceOverview } from './WorkforceOverview';
 import { attendanceCsv } from './supervision';
 
 const statusFields = ['status', 'reviewStatus', 'lateArrival', 'earlyExit', 'outsideGeofence'];
@@ -122,6 +123,7 @@ export function AttendanceOverview({
   }
   return (
     <section className="attendance-overview" aria-label="Attendance overview">
+      <WorkforceOverview filters={filters} />
       <div className="attendance-overview-heading">
         <div>
           <h2>Team attendance overview</h2>
